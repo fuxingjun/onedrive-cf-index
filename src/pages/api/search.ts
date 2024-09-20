@@ -1,10 +1,10 @@
 import axios from 'axios'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-import { encodePath, getAccessToken } from '.'
+import { encodePath, getAccessToken } from './hello'
 import apiConfig from '../../../config/api.config'
 import siteConfig from '../../../config/site.config'
-
+export const runtime = 'edge'
 /**
  * Sanitize the search query
  *

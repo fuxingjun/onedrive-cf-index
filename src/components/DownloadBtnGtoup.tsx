@@ -3,14 +3,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import toast from 'react-hot-toast'
 import { useClipboard } from 'use-clipboard-copy'
-import { useTranslation } from 'next-i18next'
 
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 
-import { getBaseUrl } from '../utils/getBaseUrl'
-import { getStoredToken } from '../utils/protectedRouteHandler'
+import { getBaseUrl } from '@/utils/getBaseUrl'
+import { getStoredToken } from '@/utils/protectedRouteHandler'
 import CustomEmbedLinkMenu from './CustomEmbedLinkMenu'
+import { useTranslation } from '../locales'
 
 const btnStyleMap = (btnColor?: string) => {
   const colorMap = {
@@ -22,8 +22,8 @@ const btnStyleMap = (btnColor?: string) => {
       'hover:text-green-600 focus:ring-green-200 focus:text-green-600 border-green-300 dark:border-green-700 dark:focus:ring-green-500',
     pink: 'hover:text-pink-600 focus:ring-pink-200 focus:text-pink-600 border-pink-300 dark:border-pink-700 dark:focus:ring-pink-500',
     yellow:
-      'hover:text-yellow-400 focus:ring-yellow-100 focus:text-yellow-400 border-yellow-300 dark:border-yellow-400 dark:focus:ring-yellow-300',
-  }
+      'hover:text-yellow-400 focus:ring-yellow-100 focus:text-yellow-400 border-yellow-300 dark:border-yellow-400 dark:focus:ring-yellow-300'
+  } as Record<string, string>
 
   if (btnColor) {
     return colorMap[btnColor]
@@ -33,13 +33,13 @@ const btnStyleMap = (btnColor?: string) => {
 }
 
 export const DownloadButton = ({
-  onClickCallback,
-  btnColor,
-  btnText,
-  btnIcon,
-  btnImage,
-  btnTitle,
-}: {
+                                 onClickCallback,
+                                 btnColor,
+                                 btnText,
+                                 btnIcon,
+                                 btnImage,
+                                 btnTitle
+                               }: {
   onClickCallback: MouseEventHandler<HTMLButtonElement>
   btnColor?: string
   btnText: string
@@ -74,12 +74,12 @@ const DownloadButtonGroup = () => {
   return (
     <>
       <CustomEmbedLinkMenu menuOpen={menuOpen} setMenuOpen={setMenuOpen} path={asPath} />
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className='flex flex-wrap justify-center gap-2'>
         <DownloadButton
           onClickCallback={() => window.open(`/api/raw/?path=${asPath}${hashedToken ? `&odpt=${hashedToken}` : ''}`)}
-          btnColor="blue"
+          btnColor='blue'
           btnText={t('Download')}
-          btnIcon="file-download"
+          btnIcon='file-download'
           btnTitle={t('Download the file directly through OneDrive')}
         />
         <DownloadButton
@@ -87,16 +87,16 @@ const DownloadButtonGroup = () => {
             clipboard.copy(`${getBaseUrl()}/api/raw/?path=${asPath}${hashedToken ? `&odpt=${hashedToken}` : ''}`)
             toast.success(t('Copied direct link to clipboard.'))
           }}
-          btnColor="pink"
+          btnColor='pink'
           btnText={t('Copy direct link')}
-          btnIcon="copy"
+          btnIcon='copy'
           btnTitle={t('Copy the permalink to the file to the clipboard')}
         />
         <DownloadButton
           onClickCallback={() => setMenuOpen(true)}
-          btnColor="teal"
+          btnColor='teal'
           btnText={t('Customise link')}
-          btnIcon="pen"
+          btnIcon='pen'
         />
       </div>
     </>

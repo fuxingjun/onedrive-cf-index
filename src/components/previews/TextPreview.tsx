@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useTranslation } from 'next-i18next'
+import { useTranslation } from '../../locales'
 
 import FourOhFour from '../FourOhFour'
 import Loading from '../Loading'

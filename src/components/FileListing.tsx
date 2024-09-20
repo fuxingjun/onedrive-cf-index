@@ -7,7 +7,6 @@ import emojiRegex from 'emoji-regex'
 
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { useTranslation } from 'next-i18next'
 
 import useLocalStorage from '../utils/useLocalStorage'
 import { getPreviewType, preview } from '../utils/getPreviewType'
@@ -18,7 +17,7 @@ import {
   DownloadingToast,
   downloadMultipleFiles,
   downloadTreelikeMultipleFiles,
-  traverseFolder,
+  traverseFolder
 } from './MultiFileDownloader'
 
 import { layouts } from './SwitchLayout'
@@ -39,10 +38,11 @@ import { PreviewContainer } from './previews/Containers'
 
 import FolderListLayout from './FolderListLayout'
 import FolderGridLayout from './FolderGridLayout'
+import { useTranslation } from '../locales'
 
 // Disabling SSR for some previews
 const EPUBPreview = dynamic(() => import('./previews/EPUBPreview'), {
-  ssr: false,
+  ssr: false
 })
 
 /**
@@ -75,7 +75,7 @@ export const ChildName: FC<{ name: string; folder?: boolean }> = ({ name, folder
   const extension = folder ? '' : getRawExtension(original)
   const prename = folder ? original : original.substring(0, original.length - extension.length)
   return (
-    <span className="truncate before:float-right before:content-[attr(data-tail)]" data-tail={extension}>
+    <span className='truncate before:float-right before:content-[attr(data-tail)]' data-tail={extension}>
       {prename}
     </span>
   )
@@ -119,12 +119,12 @@ export const Checkbox: FC<{
   return (
     <span
       title={title}
-      className="inline-flex cursor-pointer items-center rounded p-1.5 hover:bg-gray-300 dark:hover:bg-gray-600"
+      className='inline-flex cursor-pointer items-center rounded p-1.5 hover:bg-gray-300 dark:hover:bg-gray-600'
       onClick={handleClick}
     >
       <input
-        className="form-check-input cursor-pointer"
-        type="checkbox"
+        className='form-check-input cursor-pointer'
+        type='checkbox'
         value={checked ? '1' : ''}
         ref={ref}
         aria-label={title}
@@ -136,11 +136,11 @@ export const Checkbox: FC<{
 
 export const Downloading: FC<{ title: string; style: string }> = ({ title, style }) => {
   return (
-    <span title={title} className={`${style} rounded`} role="status">
+    <span title={title} className={`${style} rounded`} role='status'>
       <LoadingIcon
         // Use fontawesome far theme via class `svg-inline--fa` to get style `vertical-align` only
         // for consistent icon alignment, as class `align-*` cannot satisfy it
-        className="svg-inline--fa inline-block h-4 w-4 animate-spin"
+        className='svg-inline--fa inline-block h-4 w-4 animate-spin'
       />
     </span>
   )
@@ -240,7 +240,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
         .filter(c => selected[c.id])
         .map(c => ({
           name: c.name,
-          url: `/api/raw/?path=${path}/${encodeURIComponent(c.name)}${hashedToken ? `&odpt=${hashedToken}` : ''}`,
+          url: `/api/raw/?path=${path}/${encodeURIComponent(c.name)}${hashedToken ? `&odpt=${hashedToken}` : ''}`
         }))
 
       if (files.length == 1) {
@@ -258,7 +258,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
           .then(() => {
             setTotalGenerating(false)
             toast.success(t('Finished downloading selected files.'), {
-              id: toastId,
+              id: toastId
             })
           })
           .catch(() => {
@@ -288,7 +288,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
               t('Failed to download folder {{path}}: {{status}} {{message}} Skipped it to continue.', {
                 path: p,
                 status: error.status,
-                message: error.message,
+                message: error.message
               })
             )
             continue
@@ -298,7 +298,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
             name: c?.name,
             url: `/api/raw/?path=${p}${hashedTokenForPath ? `&odpt=${hashedTokenForPath}` : ''}`,
             path: p,
-            isFolder,
+            isFolder
           }
         }
       })()
@@ -311,7 +311,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
         router,
         files,
         basePath: path,
-        folder: name,
+        folder: name
       })
         .then(() => {
           setFolderGenerating({ ...folderGenerating, [id]: false })
@@ -322,7 +322,6 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
           toast.error(t('Failed to download folder.'), { id: toastId })
         })
     }
-
     // Folder layout component props
     const folderProps = {
       toast,
@@ -336,7 +335,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
       handleSelectedDownload,
       folderGenerating,
       handleSelectedPermalink,
-      handleFolderDownload,
+      handleFolderDownload
     }
 
     return (
@@ -346,12 +345,13 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
         {layout.name === 'Grid' ? <FolderGridLayout {...folderProps} /> : <FolderListLayout {...folderProps} />}
 
         {!onlyOnePage && (
-          <div className="rounded-b bg-white dark:bg-gray-900 dark:text-gray-100">
-            <div className="border-b border-gray-200 p-3 text-center font-mono text-sm text-gray-400 dark:border-gray-700">
+          <div className='rounded-b bg-white dark:bg-gray-900 dark:text-gray-100'>
+            <div
+              className='border-b border-gray-200 p-3 text-center font-mono text-sm text-gray-400 dark:border-gray-700'>
               {t('- showing {{count}} page(s) ', {
-                count: size,
-                totalFileNum: isLoadingMore ? '...' : folderChildren.length,
-              }) +
+                  count: size,
+                  totalFileNum: isLoadingMore ? '...' : folderChildren.length
+                }) +
                 (isLoadingMore
                   ? t('of {{count}} file(s) -', { count: folderChildren.length, context: 'loading' })
                   : t('of {{count}} file(s) -', { count: folderChildren.length, context: 'loaded' }))}
@@ -365,7 +365,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
             >
               {isLoadingMore ? (
                 <>
-                  <LoadingIcon className="inline-block h-4 w-4 animate-spin" />
+                  <LoadingIcon className='inline-block h-4 w-4 animate-spin' />
                   <span>{t('Loading ...')}</span>{' '}
                 </>
               ) : isReachingEnd ? (
@@ -373,7 +373,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
               ) : (
                 <>
                   <span>{t('Load more')}</span>
-                  <FontAwesomeIcon icon="chevron-circle-down" />
+                  <FontAwesomeIcon icon='chevron-circle-down' />
                 </>
               )}
             </button>
@@ -381,7 +381,7 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
         )}
 
         {readmeFile && (
-          <div className="mt-4">
+          <div className='mt-4'>
             <MarkdownPreview file={readmeFile} path={path} standalone={false} />
           </div>
         )}

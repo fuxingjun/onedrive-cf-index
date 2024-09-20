@@ -1,12 +1,14 @@
 import type { OdThumbnail } from '../../types'
 
-import { posix as pathPosix } from 'path'
+import { posix as pathPosix } from '../../utils/nodePolyfill'
 
 import axios from 'axios'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-import { checkAuthRoute, encodePath, getAccessToken } from '.'
+import { checkAuthRoute, encodePath, getAccessToken } from './hello'
 import apiConfig from '../../../config/api.config'
+
+export const runtime = 'edge'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const accessToken = await getAccessToken()
@@ -59,14 +61,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { data } = await axios.get(`${requestUrl}${isRoot ? '' : ':'}/thumbnails`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${accessToken}` }
     })
 
     const thumbnailUrl = data.value && data.value.length > 0 ? (data.value[0] as OdThumbnail)[size].url : null
     if (thumbnailUrl) {
       res.redirect(thumbnailUrl)
     } else {
-      res.status(400).json({ error: "The item doesn't have a valid thumbnail." })
+      res.status(400).json({ error: 'The item doesn\'t have a valid thumbnail.' })
     }
   } catch (error: any) {
     res.status(error?.response?.status).json({ error: error?.response?.data ?? 'Internal server error.' })

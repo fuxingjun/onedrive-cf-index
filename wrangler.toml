@@ -1,0 +1,15 @@
+name = "onedrive-index"
+#workers_dev = true
+#account_id = "b87997a496f985b46b927b3f24c61de1"
+#zone_id = "b04152d2c33ff4653cec1a579be6d42a"
+#To have wrangler dev connect to your Workers KV namespace running on Cloudflare’s global network, call wrangler dev --remote instead.
+#This uses the preview_id of the KV binding configuration in the wrangler.toml file.
+#See the KV binding docs for more information.
+kv_namespaces = [
+    { binding = "onedrive_index", id = "843bdb89cdf346868107c3e44a954cd0" }
+]
+compatibility_date = "2024-09-09"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+#[env.staging]
+#name = "drive-staging"

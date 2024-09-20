@@ -1,11 +1,13 @@
-import { posix as pathPosix } from 'path'
+import { posix as pathPosix } from '../../utils/nodePolyfill'
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios, { AxiosResponseHeaders } from 'axios'
 import Cors from 'cors'
 
 import { driveApi, cacheControlHeader } from '../../../config/api.config'
-import { encodePath, getAccessToken, checkAuthRoute } from '.'
+import { encodePath, getAccessToken, checkAuthRoute } from './hello'
+
+export const runtime = 'edge'
 
 // CORS middleware for raw links: https://nextjs.org/docs/api-routes/api-middlewares
 export function runCorsMiddleware(req: NextApiRequest, res: NextApiResponse) {
@@ -65,15 +67,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       headers: { Authorization: `Bearer ${accessToken}` },
       params: {
         // OneDrive international version fails when only selecting the downloadUrl (what a stupid bug)
-        select: 'id,size,@microsoft.graph.downloadUrl',
-      },
+        select: 'id,size,@microsoft.graph.downloadUrl'
+      }
     })
 
     if ('@microsoft.graph.downloadUrl' in data) {
       // Only proxy raw file content response for files up to 4MB
       if (proxy && 'size' in data && data['size'] < 4194304) {
         const { headers, data: stream } = await axios.get(data['@microsoft.graph.downloadUrl'] as string, {
-          responseType: 'stream',
+          responseType: 'stream'
         })
         headers['Cache-Control'] = cacheControlHeader
         // Send data stream as response

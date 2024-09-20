@@ -1,7 +1,7 @@
 import { NextRouter } from 'next/router'
 import toast from 'react-hot-toast'
 import JSZip from 'jszip'
-import { useTranslation } from 'next-i18next'
+import { useTranslation } from '../locales'
 
 import { fetcher } from '../utils/fetchWithSWR'
 import { getStoredToken } from '../utils/protectedRouteHandler'
@@ -189,7 +189,7 @@ export async function* traverseFolder(path: string): AsyncGenerator<TraverseItem
       i,
       path,
       data: await fetcher([
-        next ? `/api/?path=${path}&next=${next}` : `/api?path=${path}`,
+        next ? `/api/hello/?path=${path}&next=${next}` : `/api/hello/?path=${path}`,
         hashedToken ?? undefined,
       ]).catch(error => ({ i, path, error })),
     }

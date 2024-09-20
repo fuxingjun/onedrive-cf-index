@@ -1,17 +1,21 @@
-import { posix as pathPosix } from 'path'
+import { posix as pathPosix } from '../../utils/nodePolyfill'
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
 
 import apiConfig from '../../../config/api.config'
 import siteConfig from '../../../config/site.config'
-import { revealObfuscatedToken } from '../../utils/oAuthHandler'
-import { compareHashedToken } from '../../utils/protectedRouteHandler'
-import { getOdAuthTokens, storeOdAuthTokens } from '../../utils/odAuthTokenStore'
+import { revealObfuscatedToken } from '@/utils/oAuthHandler'
+import { compareHashedToken } from '@/utils/protectedRouteHandler'
+import { getOdAuthTokens, storeOdAuthTokens } from '@/utils/odAuthTokenStore'
 import { runCorsMiddleware } from './raw'
 
 const basePath = pathPosix.resolve('/', siteConfig.baseDirectory)
 const clientSecret = revealObfuscatedToken(apiConfig.obfuscatedClientSecret)
+
+export const config = {
+  runtime: 'edge'
+}
 
 /**
  * Encode the path of the file relative to the base directory
@@ -58,8 +62,8 @@ export async function getAccessToken(): Promise<string> {
 
   const resp = await axios.post(apiConfig.authApi, body, {
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
   })
 
   if ('access_token' in resp.data && 'refresh_token' in resp.data) {
@@ -67,7 +71,7 @@ export async function getAccessToken(): Promise<string> {
     await storeOdAuthTokens({
       accessToken: access_token,
       accessTokenExpiry: parseInt(expires_in),
-      refreshToken: refresh_token,
+      refreshToken: refresh_token
     })
     console.log('Fetch new access token with stored refresh token.')
     return access_token
@@ -128,8 +132,8 @@ export async function checkAuthRoute(
     const token = await axios.get(`${apiConfig.driveApi}/root${encodePath(authTokenPath)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: {
-        select: '@microsoft.graph.downloadUrl,file',
-      },
+        select: '@microsoft.graph.downloadUrl,file'
+      }
     })
 
     // Handle request and check for header 'od-protected-token'
@@ -139,7 +143,7 @@ export async function checkAuthRoute(
     if (
       !compareHashedToken({
         odTokenHeader: odTokenHeader,
-        dotPassword: odProtectedToken.data.toString(),
+        dotPassword: odProtectedToken.data.toString()
       })
     ) {
       return { code: 401, message: 'Password required.' }
@@ -147,7 +151,7 @@ export async function checkAuthRoute(
   } catch (error: any) {
     // Password file not found, fallback to 404
     if (error?.response?.status === 404) {
-      return { code: 404, message: "You didn't set a password." }
+      return { code: 404, message: 'You didn\'t set a password.' }
     } else {
       return { code: 500, message: 'Internal server error.' }
     }
@@ -174,6 +178,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // If method is GET, then the API is a normal request to the OneDrive API for files or folders
+  console.log("req.query???",req)
   const { path = '/', raw = false, next = '', sort = '' } = req.query
 
   // Set edge function caching for faster load times, check docs:
@@ -236,8 +241,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       headers: { Authorization: `Bearer ${accessToken}` },
       params: {
         // OneDrive international version fails when only selecting the downloadUrl (what a stupid bug)
-        select: 'id,@microsoft.graph.downloadUrl',
-      },
+        select: 'id,@microsoft.graph.downloadUrl'
+      }
     })
 
     if ('@microsoft.graph.downloadUrl' in data) {
@@ -253,8 +258,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: identityData } = await axios.get(requestUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: {
-        select: 'name,size,id,lastModifiedDateTime,folder,file,video,image',
-      },
+        select: 'name,size,id,lastModifiedDateTime,folder,file,video,image'
+      }
     })
 
     if ('folder' in identityData) {
@@ -263,11 +268,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         params: {
           ...{
             select: 'name,size,id,lastModifiedDateTime,folder,file,video,image',
-            $top: siteConfig.maxItems,
+            $top: siteConfig.maxItems
           },
           ...(next ? { $skipToken: next } : {}),
-          ...(sort ? { $orderby: sort } : {}),
-        },
+          ...(sort ? { $orderby: sort } : {})
+        }
       })
 
       // Extract next page token from full @odata.nextLink
