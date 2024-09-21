@@ -1,6 +1,7 @@
-import { posix as pathPosix } from '../../utils/nodePolyfill'
+import { getRequestQuery, posix as pathPosix } from '../../utils/nodePolyfill'
 
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import axios from 'axios'
 
 import apiConfig from '../../../config/api.config'
@@ -160,69 +161,88 @@ export async function checkAuthRoute(
   return { code: 200, message: 'Authenticated.' }
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextRequest) {
   // If method is POST, then the API is called by the client to store acquired tokens
+  const headers = { 'Content-Type': 'application/json' }
   if (req.method === 'POST') {
-    const { obfuscatedAccessToken, accessTokenExpiry, obfuscatedRefreshToken } = req.body
+    const body = await req.json()
+    const { obfuscatedAccessToken, accessTokenExpiry, obfuscatedRefreshToken } = body as any
     const accessToken = revealObfuscatedToken(obfuscatedAccessToken)
     const refreshToken = revealObfuscatedToken(obfuscatedRefreshToken)
 
     if (typeof accessToken !== 'string' || typeof refreshToken !== 'string') {
-      res.status(400).send('Invalid request body')
-      return
+      return new Response('Invalid request body', {
+        status: 400 // 或其他适当的状态码
+      })
     }
 
     await storeOdAuthTokens({ accessToken, accessTokenExpiry, refreshToken })
-    res.status(200).send('OK')
-    return
+    return new Response('OK', {
+      status: 200 // 或其他适当的状态码
+    })
   }
 
   // If method is GET, then the API is a normal request to the OneDrive API for files or folders
-  console.log("req.query???",req)
-  const { path = '/', raw = false, next = '', sort = '' } = req.query
+  const query = getRequestQuery(req)
+  const { path = '/', raw = false, next = '', sort = '' } = query
 
   // Set edge function caching for faster load times, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching
-  res.setHeader('Cache-Control', apiConfig.cacheControlHeader)
+  headers['Cache-Control'] = apiConfig.cacheControlHeader
 
   // Sometimes the path parameter is defaulted to '[...path]' which we need to handle
   if (path === '[...path]') {
-    res.status(400).json({ error: 'No path specified.' })
-    return
+    return new Response(JSON.stringify({ error: 'No path specified.' }), {
+      status: 400,
+      headers
+    })
   }
   // If the path is not a valid path, return 400
   if (typeof path !== 'string') {
-    res.status(400).json({ error: 'Path query invalid.' })
-    return
+    return new Response(JSON.stringify({ error: 'Path query invalid.' }), {
+      status: 400,
+      headers
+    })
   }
   // Besides normalizing and making absolute, trailing slashes are trimmed
   const cleanPath = pathPosix.resolve('/', pathPosix.normalize(path)).replace(/\/$/, '')
 
   // Validate sort param
   if (typeof sort !== 'string') {
-    res.status(400).json({ error: 'Sort query invalid.' })
-    return
+    const error = 'Sort query invalid.'
+    return new Response(JSON.stringify({ error }), {
+      status: 400,
+      headers
+    })
   }
 
   const accessToken = await getAccessToken()
 
   // Return error 403 if access_token is empty
   if (!accessToken) {
-    res.status(403).json({ error: 'No access token.' })
-    return
+    const error = 'No access token.'
+    return new Response(JSON.stringify({ error }), {
+      status: 403,
+      headers
+    })
   }
 
   // Handle protected routes authentication
-  const { code, message } = await checkAuthRoute(cleanPath, accessToken, req.headers['od-protected-token'] as string)
+  const {
+    code,
+    message
+  } = await checkAuthRoute(cleanPath, accessToken, req.headers.get('od-protected-token') as string)
   // Status code other than 200 means user has not authenticated yet
   if (code !== 200) {
-    res.status(code).json({ error: message })
-    return
+    return new Response(JSON.stringify({ error: message }), {
+      status: code,
+      headers
+    })
   }
   // If message is empty, then the path is not protected.
   // Conversely, protected routes are not allowed to serve from cache.
   if (message !== '') {
-    res.setHeader('Cache-Control', 'no-cache')
+    headers['Cache-Control'] = 'no-cache'
   }
 
   const requestPath = encodePath(cleanPath)
@@ -234,8 +254,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Go for file raw download link, add CORS headers, and redirect to @microsoft.graph.downloadUrl
   // (kept here for backwards compatibility, and cache headers will be reverted to no-cache)
   if (raw) {
-    await runCorsMiddleware(req, res)
-    res.setHeader('Cache-Control', 'no-cache')
+    const [r, h] = runCorsMiddleware(req)
+    headers['Cache-Control'] = 'no-cache'
+    if (r) {
+      return r
+    }
+    Object.assign(headers, h)
 
     const { data } = await axios.get(requestUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -246,11 +270,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if ('@microsoft.graph.downloadUrl' in data) {
-      res.redirect(data['@microsoft.graph.downloadUrl'])
+      // res.redirect(data['@microsoft.graph.downloadUrl'])
+      return NextResponse.redirect(data['@microsoft.graph.downloadUrl'], 302)
     } else {
-      res.status(404).json({ error: 'No download url found.' })
+      const error = 'No download url found.'
+      return new Response(JSON.stringify({ error }), {
+        status: 404,
+        headers
+      })
     }
-    return
   }
 
   // Querying current path identity (file or folder) and follow up query childrens in folder
@@ -282,16 +310,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Return paging token if specified
       if (nextPage) {
-        res.status(200).json({ folder: folderData, next: nextPage })
+        return new Response(JSON.stringify({ folder: folderData, next: nextPage }), {
+          status: 200,
+          headers
+        })
       } else {
-        res.status(200).json({ folder: folderData })
+        return new Response(JSON.stringify({ folder: folderData }), {
+          status: 200,
+          headers
+        })
       }
-      return
     }
-    res.status(200).json({ file: identityData })
-    return
+    return new Response(JSON.stringify({ file: identityData }), {
+      status: 200,
+      headers
+    })
   } catch (error: any) {
-    res.status(error?.response?.code ?? 500).json({ error: error?.response?.data ?? 'Internal server error.' })
-    return
+    return new Response(JSON.stringify({ error: error?.response?.data ?? 'Internal server error.' }), {
+      status: error?.response?.code ?? 500,
+      headers
+    })
   }
 }

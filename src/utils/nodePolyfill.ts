@@ -92,6 +92,12 @@ const posix: PathPosix = {
     return this.normalize(resolvedPath)
   }
 }
+
+export function getRequestQuery(req) {
+  const { searchParams } = new URL(req.url as string)
+  return Object.fromEntries(searchParams)
+}
+
 export {
   posix
 }

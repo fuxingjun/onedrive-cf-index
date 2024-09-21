@@ -1,21 +1,25 @@
 import axios from 'axios'
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextRequest } from 'next/server'
 
 import { getAccessToken } from './hello'
 import apiConfig from '../../../config/api.config'
+import { getRequestQuery } from '@/utils/nodePolyfill'
+
 export const runtime = 'edge'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextRequest) {
 
   // Get access token from storage
   const accessToken = await getAccessToken()
 
   // Get item details (specifically, its path) by its unique ID in OneDrive
-  const { id = '' } = req.query
+  const query = getRequestQuery(req)
+  const { id = '' } = query
 
+  const headers = { 'Content-Type': 'application/json' }
   // Set edge function caching for faster load times, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching
-  res.setHeader('Cache-Control', apiConfig.cacheControlHeader)
+  headers['Cache-Control'] = apiConfig.cacheControlHeader
 
   if (typeof id === 'string') {
     const itemApi = `${apiConfig.driveApi}/items/${id}`
@@ -24,15 +28,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data } = await axios.get(itemApi, {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: {
-          select: 'id,name,parentReference',
-        },
+          select: 'id,name,parentReference'
+        }
       })
-      res.status(200).json(data)
+      return new Response(JSON.stringify(data), {
+        status: 400,
+        headers
+      })
     } catch (error: any) {
-      res.status(error?.response?.status ?? 500).json({ error: error?.response?.data ?? 'Internal server error.' })
+      return new Response(JSON.stringify({ error: error?.response?.data ?? 'Internal server error.' }), {
+        status: error?.response?.status ?? 500,
+        headers
+      })
     }
   } else {
-    res.status(400).json({ error: 'Invalid driveItem ID.' })
+    const error = 'Invalid driveItem ID.'
+    return new Response(JSON.stringify({ error }), {
+      status: 400,
+      headers
+    })
   }
-  return
 }

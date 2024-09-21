@@ -4,7 +4,10 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { encodePath, getAccessToken } from './hello'
 import apiConfig from '../../../config/api.config'
 import siteConfig from '../../../config/site.config'
+import { getRequestQuery } from '@/utils/nodePolyfill'
+
 export const runtime = 'edge'
+
 /**
  * Sanitize the search query
  *
@@ -17,7 +20,7 @@ export const runtime = 'edge'
  */
 function sanitiseQuery(query: string): string {
   const sanitisedQuery = query
-    .replace(/'/g, "''")
+    .replace(/'/g, '\'\'')
     .replace('<', ' &lt; ')
     .replace('>', ' &gt; ')
     .replace('?', ' ')
@@ -29,12 +32,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Get access token from storage
   const accessToken = await getAccessToken()
 
+  const query = getRequestQuery(req)
   // Query parameter from request
-  const { q: searchQuery = '' } = req.query
+  const { q: searchQuery = '' } = query
 
+  const headers = { 'Content-Type': 'application/json' }
   // Set edge function caching for faster load times, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching
-  res.setHeader('Cache-Control', apiConfig.cacheControlHeader)
+  headers['Cache-Control'] = apiConfig.cacheControlHeader
 
   if (typeof searchQuery === 'string') {
     // Construct Microsoft Graph Search API URL, and perform search only under the base directory
@@ -48,15 +53,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         headers: { Authorization: `Bearer ${accessToken}` },
         params: {
           select: 'id,name,file,folder,parentReference',
-          top: siteConfig.maxItems,
-        },
+          top: siteConfig.maxItems
+        }
       })
-      res.status(200).json(data.value)
+      return new Response(JSON.stringify(data.value), {
+        status: 200,
+        headers
+      })
     } catch (error: any) {
-      res.status(error?.response?.status ?? 500).json({ error: error?.response?.data ?? 'Internal server error.' })
+      return new Response(JSON.stringify({ error: error?.response?.data ?? 'Internal server error.' }), {
+        status: error?.response?.status ?? 500,
+        headers
+      })
     }
   } else {
-    res.status(200).json([])
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers
+    })
   }
-  return
 }
