@@ -16,7 +16,7 @@ export async function getOdAuthTokens(): Promise<{ accessToken: unknown; refresh
 
   return {
     accessToken,
-    refreshToken,
+    refreshToken
   }
 }
 
@@ -30,6 +30,6 @@ export async function storeOdAuthTokens({
   refreshToken: string
 }): Promise<void> {
   const kv = getRequestContext().env.onedrive_index
-  await kv.put(`${siteConfig.kvPrefix}access_token`, accessToken, { expiration: accessTokenExpiry })
+  await kv.put(`${siteConfig.kvPrefix}access_token`, accessToken, { expiration: Date.now() / 1000 + Math.min(accessTokenExpiry, 7 * 24 * 3600) })
   await kv.put(`${siteConfig.kvPrefix}refresh_token`, refreshToken)
 }

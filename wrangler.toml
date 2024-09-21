@@ -6,7 +6,7 @@ name = "onedrive-index"
 #This uses the preview_id of the KV binding configuration in the wrangler.toml file.
 #See the KV binding docs for more information.
 kv_namespaces = [
-    { binding = "onedrive_index", id = "843bdb89cdf346868107c3e44a954cd0" }
+    { binding = "onedrive_index", id = "843bdb89cdf346868107c3e44a954cd0", preview_id = "843bdb89cdf346868107c3e44a954cd0" }
 ]
 compatibility_date = "2024-09-09"
 compatibility_flags = ["nodejs_compat"]

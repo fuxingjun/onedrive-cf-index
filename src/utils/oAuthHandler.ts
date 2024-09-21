@@ -6,11 +6,13 @@ import apiConfig from '../../config/api.config'
 // Just a disguise to obfuscate required tokens (including but not limited to client secret,
 // access tokens, and refresh tokens), used along with the following two functions
 const AES_SECRET_KEY = 'onedrive-vercel-index'
+
 export function obfuscateToken(token: string): string {
   // Encrypt token with AES
   const encrypted = CryptoJS.AES.encrypt(token, AES_SECRET_KEY)
   return encrypted.toString()
 }
+
 export function revealObfuscatedToken(obfuscated: string): string {
   // Decrypt SHA256 obfuscated token
   const decrypted = CryptoJS.AES.decrypt(obfuscated, AES_SECRET_KEY)
@@ -51,27 +53,32 @@ export function extractAuthCodeFromRedirected(url: string): string {
 // and returns the access token and refresh token on success.
 export async function requestTokenWithAuthCode(
   code: string
-): Promise<
-  | { expiryTime: string; accessToken: string; refreshToken: string }
-  | { error: string; errorDescription: string; errorUri: string }
-> {
+): Promise<| { expiryTime: string; accessToken: string; refreshToken: string }
+  | { error: string; errorDescription: string; errorUri: string }> {
   const { clientId, redirectUri, authApi } = apiConfig
   const clientSecret = revealObfuscatedToken(apiConfig.obfuscatedClientSecret)
 
   // Construct URL parameters for OAuth2
-  const params = new URLSearchParams()
-  params.append('client_id', clientId)
-  params.append('redirect_uri', redirectUri)
-  params.append('client_secret', clientSecret)
-  params.append('code', code)
-  params.append('grant_type', 'authorization_code')
+  // const params = new URLSearchParams()
+  // params.append('client_id', clientId)
+  // params.append('redirect_uri', redirectUri)
+  // params.append('client_secret', clientSecret)
+  // params.append('code', code)
+  // params.append('grant_type', 'authorization_code')
+  const params = {
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    client_secret: clientSecret,
+    code,
+    grant_type: 'authorization_code'
+  }
 
   // Request access token
   return axios
     .post(authApi, params, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
     .then(resp => {
       const { expires_in, access_token, refresh_token } = resp.data
@@ -89,23 +96,23 @@ export async function getAuthPersonInfo(accessToken: string) {
   const profileApi = apiConfig.driveApi.replace('/drive', '')
   return axios.get(profileApi, {
     headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+      Authorization: `Bearer ${accessToken}`
+    }
   })
 }
 
 export async function sendTokenToServer(accessToken: string, refreshToken: string, expiryTime: string) {
   return await axios.post(
-    '/api',
+    '/api/hello',
     {
       obfuscatedAccessToken: obfuscateToken(accessToken),
       accessTokenExpiry: parseInt(expiryTime),
-      obfuscatedRefreshToken: obfuscateToken(refreshToken),
+      obfuscatedRefreshToken: obfuscateToken(refreshToken)
     },
     {
       headers: {
-        'Content-Type': 'application/json',
-      },
+        'Content-Type': 'application/json'
+      }
     }
   )
 }

@@ -205,8 +205,8 @@ export default async function handler(req: NextRequest) {
     })
   }
   // Besides normalizing and making absolute, trailing slashes are trimmed
-  const cleanPath = pathPosix.resolve('/', pathPosix.normalize(path)).replace(/\/$/, '')
-
+  const cleanPath = path === '/' ? '' : pathPosix.resolve('/', pathPosix.normalize(path)).replace(/\/$/, '')
+  console.log('cleanPath', cleanPath)
   // Validate sort param
   if (typeof sort !== 'string') {
     const error = 'Sort query invalid.'
