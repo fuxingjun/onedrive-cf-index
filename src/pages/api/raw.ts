@@ -128,7 +128,6 @@ export default async function handler(req: NextRequest) {
         headers
       })
     }
-    return
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error?.response?.data ?? 'Internal server error.' }), {
       status: error?.response?.code ?? 500,
