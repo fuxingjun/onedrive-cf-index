@@ -54,14 +54,21 @@ export async function getAccessToken(): Promise<string> {
   }
 
   // Fetch new access token with in storage refresh token
-  const body = new URLSearchParams()
-  body.append('client_id', apiConfig.clientId)
-  body.append('redirect_uri', apiConfig.redirectUri)
-  body.append('client_secret', clientSecret)
-  body.append('refresh_token', refreshToken)
-  body.append('grant_type', 'refresh_token')
+  // const body = new URLSearchParams()
+  // body.append('client_id', apiConfig.clientId)
+  // body.append('redirect_uri', apiConfig.redirectUri)
+  // body.append('client_secret', clientSecret)
+  // body.append('refresh_token', refreshToken)
+  // body.append('grant_type', 'refresh_token')
+  const params = {
+    client_id: apiConfig.clientId,
+    redirect_uri: apiConfig.redirectUri,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: 'refresh_token'
+  }
 
-  const resp = await axios.post(apiConfig.authApi, body, {
+  const resp = await axios.post(apiConfig.authApi, params, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
